@@ -3,6 +3,7 @@ from tkinter import messagebox
 from tkinter import simpledialog
 from collections import namedtuple
 
+import geometry
 from geometry import Point2D
 
 WINDOW_SIZE = namedtuple('WidthHeight', ['width', 'height'])(width=1400, height=900)
@@ -59,6 +60,12 @@ class PointTableRow:
     def get_point(self) -> Point2D:
         return self.point
 
+    def color(self, color):
+        if color == 'black':
+            color = '#F0F0F0'
+        self.x_label.configure(bg=color)
+        self.y_label.configure(bg=color)
+
 
 class PointTable(LabelFrame):
     def __init__(self, point_manager: "PointManager", *args, **kwargs):
@@ -105,13 +112,18 @@ class PointTable(LabelFrame):
         for rows in self.rows:
             if rows.get_point() is point:
                 rows.destroy()
-                #return хз почему два объекта
+                # return хз почему два объекта
 
     def update(self, point: Point2D, x, y):
         for rows in self.rows:
             if rows.get_point() is point:
                 rows.update(x, y)
-                #return хз почему два объекта(больше делете)
+                # return хз почему два объекта(больше делете)
+
+    def color(self, point: Point2D, color):
+        for row in self.rows:
+            if row.get_point() is point:
+                row.color(color)
 
 
 class ResizingCanvas(Canvas):
@@ -131,8 +143,22 @@ class ResizingCanvas(Canvas):
         self.config(width=self.width, height=self.height)
         self.scale("all", 0, 0, wscale, hscale)
 
-    def draw_point(self, p: Point2D):
-        return self.create_oval(p.x - 3, p.y - 3, p.x + 3, p.y + 3, fill='black')
+    def draw_point(self, p: Point2D, color='black'):
+        return self.create_oval(p.x - 3, p.y - 3, p.x + 3, p.y + 3, fill=color)
+
+    def draw_line(self, p_start_id: int, p_end_id: int):
+        p_start = self.coords(p_start_id)
+        p_end = self.coords(p_end_id)
+        p_vec = (p_end[0] - p_start[0], p_end[1] - p_start[1])
+        p_start_draw = (p_start[0] + p_vec[0] * (-1000), p_start[1] + p_vec[1] * (-1000))
+        p_end_draw = (p_start[0] + p_vec[0] * 1000, p_start[1] + p_vec[1] * 1000)
+        return self.create_line(p_start_draw[0] + 3, p_start_draw[1] + 3, p_end_draw[0] + 3, p_end_draw[1] + 3, width=3)
+
+    def draw_circle(self, circle: geometry.Circle, color='black'):
+        x = circle.center.x
+        y = circle.center.y
+        r = circle.radius
+        return self.create_oval(x - r, y - r, x + r, y + r, outline=color, width=3)
 
     def clear(self):
         self.delete("all")
@@ -140,10 +166,13 @@ class ResizingCanvas(Canvas):
 
 class PointManager:
     def __init__(self):
+        self.circle_upper_id = None
+        self.circle_lower_id = None
         self.canvas = None
         self.point_table = None
         self.points = []
         self.actions = []
+        self.line_id = None
 
     def set_canvas(self, canvas: Canvas):
         self.canvas = canvas
@@ -215,6 +244,90 @@ class PointManager:
             self.delete_point(last_action[1], track=False)
         elif last_action[0] == "delete":
             self.add_point(last_action[1], track=False)
+        elif last_action[0] == "task":
+            self.color_default()
+            self.clear_task()
+
+    def clear_task(self):
+        self.canvas.delete(self.line_id)
+        self.canvas.delete(self.circle_lower_id)
+        self.canvas.delete(self.circle_upper_id)
+        self.color_default()
+
+    def color_default(self):
+        for p in self.points:
+            self.color_point(p[1], 'black')
+
+    def color_point(self, point: Point2D, color):
+        self.point_table.color(point, color)
+        idx = self.get_idx_of_point(point)
+        point_id = self.points[idx][0]
+        self.canvas.delete(point_id)
+        self.points[idx][0] = self.canvas.draw_point(point, color)
+
+    def divide_into_sets(self, divide_vec: geometry.Vector):
+        copy_points = []
+        for p in self.points:
+            if p[1] is not divide_vec.start and p[1] is not divide_vec.end:
+                copy_points.append(p[1])
+        less, on, upper = geometry.divide_points_by_vec(copy_points, divide_vec)
+        return less, on, upper
+
+    def clear_line(self):
+        self.canvas.delete(self.line_id)
+
+    def task(self):
+        try:
+            self.clear_task()
+        except Exception as e:
+            print(e, 'clear task')
+        if len(self.points) < 2:
+            messagebox.showerror("Ошибка!", "Для выполнения задания необходимо как минимум 2 точки!")
+            return
+        points = [p[1] for p in self.points]
+        idx_a, idx_b = geometry.select_line_from_points(points)
+        divide_vec = geometry.Vector(self.points[idx_a][1], self.points[idx_b][1])
+        lower, on, upper = self.divide_into_sets(divide_vec)
+        for l in lower:
+            color = 'green'
+            self.color_point(l, color)
+        for u in upper:
+            color = 'red'
+            self.color_point(u, color)
+        for o in on:
+            color = 'blue'
+            self.color_point(o, color)
+        self.line_id = self.canvas.draw_line(self.points[idx_a][0], self.points[idx_b][0])
+
+        message = ""
+        circle_lower = None
+        circle_upper = None
+        try:
+            circle_lower = geometry.Circle.min_circle(lower)
+            self.circle_lower_id = self.canvas.draw_circle(circle_lower, 'green')
+            message += f"Зеленая окружность:\nРадиус:{int(circle_lower.radius)}\n" + \
+                       f"Центр: x={int(circle_lower.center.x)}, y={int(circle_lower.center.y)}\n" + \
+                       f"Площадь: {int(circle_lower.square())}\n\n\n"
+        except Exception as e:
+            print(e, 'circle_lower')
+        try:
+            circle_upper = geometry.Circle.min_circle(upper)
+            self.circle_upper_id = self.canvas.draw_circle(circle_upper, 'red')
+            message += f"Красная окружность:\nРадиус:{int(circle_upper.radius)}\n" + \
+                       f"Центр: x={int(circle_upper.center.x)}, y={int(circle_upper.center.y)}\n" + \
+                       f"Площадь: {int(circle_upper.square())}\n\n\n"
+        except Exception as e:
+            print(e, 'circle_upper')
+
+        if circle_lower is None:
+            circle_lower = geometry.Circle(Point2D(0, 0), 0)
+        if circle_upper is None:
+            circle_upper = geometry.Circle(Point2D(0, 0), 0)
+
+        message += f"Суммарная площадь: {int(geometry.Circle.total_area(circle_lower, circle_upper))}"
+
+        messagebox.showinfo("", message)
+        self.actions.append(("task", 0))
 
 
 class App:
@@ -239,11 +352,11 @@ class App:
 
         menu = Menu(self.root)
         self.root.config(menu=menu)
-        menu.add_command(label="Author", command=lambda: messagebox.showinfo(
+        menu.add_command(label="Об авторе", command=lambda: messagebox.showinfo(
             "Информация об авторе",
             "Программа сделана Булгаковым Иваном ИУ7-44Б",
         ))
-        menu.add_command(label="About", command=lambda: messagebox.showinfo(
+        menu.add_command(label="О программе", command=lambda: messagebox.showinfo(
             "Информация о программе",
             "Заданное множество точек на плоскости разбить на два подмножества прямой,"
             " проходящей через две различные точки так, чтобы количества точек, лежащих"
@@ -251,8 +364,9 @@ class App:
             " наименьшим образом. Каждое из полученных множеств поместить внутрь"
             " окружности минимального радиуса. Найти суммарную площадь, покрытую данными окружностями.",
         ))
-        menu.add_command(label="Clear canvas", command=self.point_manager.clear)
-        menu.add_command(label="Undo", command=self.point_manager.undo)
+        menu.add_command(label="Очистить", command=self.point_manager.clear)
+        menu.add_command(label="Отменить", command=self.point_manager.undo)
+        menu.add_command(label="Выполнить", command=self.point_manager.task)
 
         self.root.mainloop()
 
