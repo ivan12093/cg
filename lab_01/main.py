@@ -62,7 +62,7 @@ class PointTableRow:
 
     def color(self, color):
         if color == 'black':
-            color = '#F0F0F0'
+            color = '#d9d9d9'
         self.x_label.configure(bg=color)
         self.y_label.configure(bg=color)
 
