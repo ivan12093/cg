@@ -544,7 +544,7 @@ class PolygonField(CartesianField):
             self.undo_list.append(undo_obj)
         for pol in self.polygons:
             pol.hide(self)
-            pol.scalePol(kx, ky)
+            pol.scalePol(self.rotatePoint.x, self.rotatePoint.y, kx, ky)
 
         self.update()
 
