@@ -1,4 +1,5 @@
 from tkinter import *
+from ui_helper import VerticalScrolledFrame, ResizingCanvas
 from tkinter import messagebox
 from tkinter import simpledialog
 from collections import namedtuple
@@ -26,8 +27,8 @@ class PointTableRow:
 
         self.x_label.grid(row=point_table.rows_count(), column=0, sticky="ne")
         self.y_label.grid(row=point_table.rows_count(), column=1, sticky="ne")
-        self.edit_button.grid(row=point_table.rows_count(), column=2, sticky="ne")
-        self.delete_button.grid(row=point_table.rows_count(), column=3, sticky="ne")
+        self.edit_button.grid(row=point_table.rows_count(), column=2, columnspan=2, sticky="ne")
+        self.delete_button.grid(row=point_table.rows_count(), column=4, columnspan=2, sticky="ne")
 
     def handle_delete(self):
         self.point_manager.delete_point(self.point)
@@ -67,9 +68,9 @@ class PointTableRow:
         self.y_label.configure(bg=color)
 
 
-class PointTable(LabelFrame):
+class PointTable(Frame):
     def __init__(self, point_manager: "PointManager", *args, **kwargs):
-        LabelFrame.__init__(self, *args, **kwargs)
+        Frame.__init__(self, *args, **kwargs)
         self.rows: list[PointTableRow] = []
 
         self.point_manager = point_manager
@@ -123,45 +124,10 @@ class PointTable(LabelFrame):
     def color(self, point: Point2D, color):
         for row in self.rows:
             if row.get_point() is point:
-                row.color(color)
-
-
-class ResizingCanvas(Canvas):
-    def __init__(self, parent, **kwargs):
-        Canvas.__init__(self, parent, **kwargs)
-        self.bind("<Configure>", self.on_resize)
-        self.height = self.winfo_reqheight()
-        self.width = self.winfo_reqwidth()
-
-    def on_resize(self, event: Event):
-        wscale = float(event.width) / self.width
-        hscale = float(event.height) / self.height
-
-        self.width = event.width
-        self.height = event.height
-
-        self.config(width=self.width, height=self.height)
-        self.scale("all", 0, 0, wscale, hscale)
-
-    def draw_point(self, p: Point2D, color='black'):
-        return self.create_oval(p.x - 3, p.y - 3, p.x + 3, p.y + 3, fill=color)
-
-    def draw_line(self, p_start_id: int, p_end_id: int):
-        p_start = self.coords(p_start_id)
-        p_end = self.coords(p_end_id)
-        p_vec = (p_end[0] - p_start[0], p_end[1] - p_start[1])
-        p_start_draw = (p_start[0] + p_vec[0] * (-1000), p_start[1] + p_vec[1] * (-1000))
-        p_end_draw = (p_start[0] + p_vec[0] * 1000, p_start[1] + p_vec[1] * 1000)
-        return self.create_line(p_start_draw[0] + 3, p_start_draw[1] + 3, p_end_draw[0] + 3, p_end_draw[1] + 3, width=3)
-
-    def draw_circle(self, circle: geometry.Circle, color='black'):
-        x = circle.center.x
-        y = circle.center.y
-        r = circle.radius
-        return self.create_oval(x - r, y - r, x + r, y + r, outline=color, width=3)
-
-    def clear(self):
-        self.delete("all")
+                try:
+                    row.color(color)
+                except Exception as e:
+                    print('129', e)
 
 
 class PointManager:
@@ -204,6 +170,7 @@ class PointManager:
         point_id = self.find_point_id(point)
         self.canvas.delete(point_id)
         self.point_table.delete(point)
+        self.canvas.configure(scrollregion=self.canvas.bbox("scroll"))
         self.delete_point_from_storage(point)
 
     def add_point(self, point: Point2D, track=True):
@@ -211,6 +178,7 @@ class PointManager:
             self.actions.append(("add", point))
 
         point_id = self.canvas.draw_point(point)
+        self.canvas.configure(scrollregion=self.canvas.bbox("scroll"))
         self.point_table.add(point)
         self.points.append([point_id, point])
 
@@ -221,6 +189,7 @@ class PointManager:
         point_idx = self.get_idx_of_point(point)
         self.canvas.delete(self.points[point_idx][0])
         self.points[point_idx][0] = self.canvas.draw_point(Point2D(x=new_x, y=new_y))
+        self.canvas.configure(scrollregion=self.canvas.bbox("scroll"))
         self.point_table.update(point, new_x, new_y)
 
     def clear(self, track=True):
@@ -230,7 +199,12 @@ class PointManager:
         while len(self.points) > 0:
             self.delete_point(self.points[0][1], track=False)
 
+        self.canvas.itemconfig(self.line_id, state='hidden')
+        self.canvas.itemconfig(self.circle_lower_id, state='hidden')
+        self.canvas.itemconfig(self.circle_upper_id, state='hidden')
+
     def undo(self):
+        print(self.actions)
         if not self.actions:
             return
 
@@ -238,6 +212,9 @@ class PointManager:
         if last_action[0] == "clear":
             for point in last_action[1]:
                 self.add_point(point, track=False)
+            self.canvas.itemconfig(self.line_id, state='normal')
+            self.canvas.itemconfig(self.circle_lower_id, state='normal')
+            self.canvas.itemconfig(self.circle_upper_id, state='normal')
         elif last_action[0] == "update":
             self.update_point(last_action[1], last_action[2], last_action[3], track=False)
         elif last_action[0] == "add":
@@ -253,6 +230,9 @@ class PointManager:
         self.canvas.delete(self.circle_lower_id)
         self.canvas.delete(self.circle_upper_id)
         self.color_default()
+        self.line_id = None
+        self.circle_lower_id = None
+
 
     def color_default(self):
         for p in self.points:
@@ -338,8 +318,13 @@ class App:
 
         self.point_manager = PointManager()
 
-        self.point_table = PointTable(self.point_manager, self.frame, text="Points")
-        self.point_table.pack(side="right", fill="both", expand=False, padx=10, pady=10)
+        self.point_table_frame = Frame(self.frame)
+        self.point_table_frame.pack(side=RIGHT, fill=BOTH)
+        self.point_table_frame_scroll = VerticalScrolledFrame(self.point_table_frame)
+        self.point_table_frame_scroll.pack(side=RIGHT, fill=BOTH)
+
+        self.point_table = PointTable(self.point_manager, self.point_table_frame_scroll.interior)
+        self.point_table.pack(side=RIGHT, fill=BOTH, expand=True, padx=10, pady=10)
 
         self.canvas = ResizingCanvas(self.frame, width=WINDOW_SIZE.width, height=WINDOW_SIZE.height,
                                      bg="white", highlightthickness=0)
@@ -371,7 +356,7 @@ class App:
         self.root.mainloop()
 
     def handle_left_click(self, event: Event):
-        point = Point2D(x=event.x, y=event.y)
+        point = Point2D(x=self.canvas.canvasx(event.x), y=self.canvas.canvasy(event.y))
         self.point_manager.add_point(point)
 
 
