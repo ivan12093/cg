@@ -49,6 +49,7 @@ class VerticalScrolledFrame(Frame):
 
         canvas.bind('<Configure>', _configure_canvas)
 
+
 class XCanvas(Canvas):
     def __init__(self, rootwin, **opt):
         width = opt.get("width", 1000)
@@ -178,6 +179,7 @@ class XCanvas(Canvas):
     def eventEcho(self, event):
         print(event.keysym)
 
+
 class ResizingCanvas(XCanvas):
     def __init__(self, parent, **kwargs):
         XCanvas.__init__(self, parent, **kwargs)
@@ -196,7 +198,7 @@ class ResizingCanvas(XCanvas):
         self.scale("all", 0, 0, wscale, hscale)
 
     def draw_point(self, p: Point2D, color='black'):
-        return self.create_oval(p.x - 3, p.y - 3, p.x + 3, p.y + 3, fill=color)
+        return self.create_oval(p.x - 3, p.y - 3, p.x + 3, p.y + 3, fill=color, tags=['scroll'])
 
     def draw_line(self, p_start_id: int, p_end_id: int):
         p_start = self.coords(p_start_id)
@@ -210,7 +212,7 @@ class ResizingCanvas(XCanvas):
         x = circle.center.x
         y = circle.center.y
         r = circle.radius
-        return self.create_oval(x - r, y - r, x + r, y + r, outline=color, width=3)
+        return self.create_oval(x - r, y - r, x + r, y + r, outline=color, width=3, tags=['scroll'])
 
     def clear(self):
         self.delete("all")

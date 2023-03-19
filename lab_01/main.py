@@ -124,7 +124,10 @@ class PointTable(Frame):
     def color(self, point: Point2D, color):
         for row in self.rows:
             if row.get_point() is point:
-                row.color(color)
+                try:
+                    row.color(color)
+                except Exception as e:
+                    print('129', e)
 
 
 class PointManager:
@@ -167,7 +170,7 @@ class PointManager:
         point_id = self.find_point_id(point)
         self.canvas.delete(point_id)
         self.point_table.delete(point)
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self.canvas.configure(scrollregion=self.canvas.bbox("scroll"))
         self.delete_point_from_storage(point)
 
     def add_point(self, point: Point2D, track=True):
@@ -175,7 +178,7 @@ class PointManager:
             self.actions.append(("add", point))
 
         point_id = self.canvas.draw_point(point)
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self.canvas.configure(scrollregion=self.canvas.bbox("scroll"))
         self.point_table.add(point)
         self.points.append([point_id, point])
 
@@ -186,7 +189,7 @@ class PointManager:
         point_idx = self.get_idx_of_point(point)
         self.canvas.delete(self.points[point_idx][0])
         self.points[point_idx][0] = self.canvas.draw_point(Point2D(x=new_x, y=new_y))
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self.canvas.configure(scrollregion=self.canvas.bbox("scroll"))
         self.point_table.update(point, new_x, new_y)
 
     def clear(self, track=True):
@@ -196,7 +199,12 @@ class PointManager:
         while len(self.points) > 0:
             self.delete_point(self.points[0][1], track=False)
 
+        self.canvas.itemconfig(self.line_id, state='hidden')
+        self.canvas.itemconfig(self.circle_lower_id, state='hidden')
+        self.canvas.itemconfig(self.circle_upper_id, state='hidden')
+
     def undo(self):
+        print(self.actions)
         if not self.actions:
             return
 
@@ -204,6 +212,9 @@ class PointManager:
         if last_action[0] == "clear":
             for point in last_action[1]:
                 self.add_point(point, track=False)
+            self.canvas.itemconfig(self.line_id, state='normal')
+            self.canvas.itemconfig(self.circle_lower_id, state='normal')
+            self.canvas.itemconfig(self.circle_upper_id, state='normal')
         elif last_action[0] == "update":
             self.update_point(last_action[1], last_action[2], last_action[3], track=False)
         elif last_action[0] == "add":
@@ -219,6 +230,9 @@ class PointManager:
         self.canvas.delete(self.circle_lower_id)
         self.canvas.delete(self.circle_upper_id)
         self.color_default()
+        self.line_id = None
+        self.circle_lower_id = None
+
 
     def color_default(self):
         for p in self.points:
