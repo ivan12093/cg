@@ -385,11 +385,11 @@ class ScaleFrameSecondVersion:
 
     def shift(self):
         x, y = self.getText()
-        if not Tools.isFloat(x) or float(x) < 0:
-            showinfo('Error', 'Ввод X неверный [float >= 0]')
+        if not Tools.isFloat(x) or float(x) == 0:
+            showinfo('Error', 'Ввод X неверный [float != 0]')
 
-        elif not Tools.isFloat(y) or float(x) < 0:
-            showinfo('Error', 'Ввод Y неверный [float >= 0]')
+        elif not Tools.isFloat(y) or float(x) == 0:
+            showinfo('Error', 'Ввод Y неверный [float != 0]')
 
         else:
             self.rootFunc(float(x), float(y))
@@ -444,7 +444,7 @@ class ScaleFrame:
 
     def scale(self):
         x = self.getText()
-        if not Tools.isFloat(x) or float(x) < 0:
+        if not Tools.isFloat(x) or float(x) == 0:
             showinfo('Error', 'Ввод k неверный')
 
         else:
