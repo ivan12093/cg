@@ -3,8 +3,6 @@ from view.CanvasPoint import CanvasPoint
 
 from tkinter import *
 
-""" РАБОТАЕТ, НО НЕ ВСЕГДА, НУЖНЫ ПРОВЕРКИ """
-
 
 class CanvasCircle(Circle):
     def __init__(self, center, r, color, width=2, activefill=None, showComments=True):

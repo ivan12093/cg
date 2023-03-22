@@ -189,23 +189,15 @@ class RotateFrame:
         self.f['bg'] = color
         self.canva = canva
 
-        self.rootFunc = rootFunc if rootFunc else self.canva.canva.rotate
+        self.rootFunc = self.canva.canva.rotate
 
         self.headLabel = Label(self.f, text='-------  Повернуть  -------', bg=Settings.COLOR_MAIN_BG,
                                fg=Settings.COLOR_BTN, font=('Arial', 12, 'bold'))
 
-        self.XL = Label(self.f, text='X: ', bg=Settings.COLOR_MAIN_BG, fg=Settings.COLOR_BTN,
-                        font=('Arial', 11, 'bold'))
-        self.YL = Label(self.f, text='Y: ', bg=Settings.COLOR_MAIN_BG, fg=Settings.COLOR_BTN,
-                        font=('Arial', 11, 'bold'))
         self.AL = Label(self.f, text='α°: ', bg=Settings.COLOR_MAIN_BG, fg=Settings.COLOR_BTN,
                         font=('Arial', 11, 'bold'))
-        self.XE = Entry(self.f, width=21)
-        self.YE = Entry(self.f, width=21)
-        self.AE = Entry(self.f, width=21)
 
-        self.XE.insert(0, '0')
-        self.YE.insert(0, '0')
+        self.AE = Entry(self.f, width=21)
         self.AE.insert(0, '90')
 
         self.btn = WrapButton(self.f, txt='Применить', padx=10, pady=3, command=lambda: self.rotate(), font=('Arial', 10, 'bold'))
@@ -214,14 +206,8 @@ class RotateFrame:
 
     def show(self):
         self.headLabel.place(x=15, y=10, relwidth=0.8)
-
-        self.XL.place(x=15, y=42)
-        self.YL.place(x=15, y=82)
-        self.AL.place(x=15, y=122)
-
-        self.XE.place(x=45, y=42, height=23)
-        self.YE.place(x=45, y=82, height=23)
-        self.AE.place(x=45, y=122, height=23)
+        self.AL.place(x=15, y=75)
+        self.AE.place(x=45, y=75, height=23)
 
         self.btn.show(posx=65, posy=157)
 
@@ -229,39 +215,23 @@ class RotateFrame:
 
     def hide(self):
         self.headLabel.place_forget()
-        self.XL.place_forget()
-        self.YL.place_forget()
         self.AL.place_forget()
-        self.XE.place_forget()
-        self.YE.place_forget()
         self.AE.place_forget()
 
     def getText(self):
-        return self.XE.get(), self.YE.get(), self.AE.get()
+        return self.AE.get()
 
     def rotate(self):
-        x, y, alpha = self.getText()
-        if not Tools.isFloat(x):
-            showinfo('Error', 'Ввод X неверный')
+        alpha = self.getText()
 
-        elif not Tools.isFloat(y):
-            showinfo('Error', 'Ввод Y неверный')
-
-        elif not Tools.isFloat(alpha):
+        if not Tools.isFloat(alpha):
             showinfo('Error', 'Ввод alpha неверный')
-
         else:
-            self.rootFunc(CanvasPoint(float(x), float(y)), float(alpha))
+            self.rootFunc(self.canva.canva.rotatePoint ,float(alpha))
         return 0
 
     def bindSetting(self):
-        self.XE.bind("<Return>", lambda event: self.YE.focus_set())
-        self.YE.bind("<Return>", lambda event: self.AE.focus_set())
         self.AE.bind("<Return>", lambda event: self.rotate())
-
-        self.XE.bind("<Down>", lambda event: self.YE.focus_set())
-        self.YE.bind("<Up>", lambda event: self.XE.focus_set())
-        self.YE.bind("<Down>", lambda event: self.AE.focus_set())
         self.AE.bind("<Up>", lambda event: self.YE.focus_set())
 
 
