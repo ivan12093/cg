@@ -19,6 +19,7 @@ from tkinter.colorchooser import askcolor
 # пример создания  ResizingCanvas(myFrame, width=850, height=400, bg="red", highlightthickness=0)
 class ResizingCanvas(Canvas):
     def __init__(self, parent, **kwargs):
+        self.parent = parent
         Canvas.__init__(self, parent, **kwargs)
         self.bind("<Configure>", self.resize)
 
@@ -38,8 +39,9 @@ class ResizingCanvas(Canvas):
         # self.bind("<Up>", lambda event: self.arrowMoveAcrossField('Y', 'up'), '+')
         # self.bind("<Down>", lambda event: self.arrowMoveAcrossField('Y', 'down'), '+')
 
-        self.height = self.winfo_reqheight()
-        self.width = self.winfo_reqwidth()
+        self.height = 787
+        self.width = 1080
+        self.config(width=self.width, height=self.height)
 
         self.image = None
 
@@ -50,10 +52,7 @@ class ResizingCanvas(Canvas):
         pass
 
     def resize(self, event):
-        self.width = event.width
-        self.height = event.height
-
-        self.config(width=self.width, height=self.height)
+        self.config(width=self.width, heiFght=self.height)
 
     def click(self, event):
         print('click')
@@ -584,9 +583,9 @@ class WrapCanva:
         self.window = window
 
         self.frame = Frame(window)
-        self.canva = Canva(self.frame, self.window, showArrows=False, **kwargs)
+        self.canva = Canva(self.window, self.window, showArrows=False, **kwargs)
         self.frame.bind('<Configure>', self.resize, '+')
-        self.canva.place(x=0, y=0)
+        self.canva.pack(fill=BOTH, expand=True)
 
         self.pointMenu = None
         self.Xevent, self.Yevent = None, None
@@ -638,9 +637,31 @@ class WrapCanva:
 
     def resize(self, event):
         self.canva.resize(event)
+        print(self.window_x)
+        print(self.window_y)
+        diff_x = self.window_x / self.window.winfo_width()
+        diff_y = self.window_y / self.window.winfo_height()
+        self.window_x = self.window.winfo_width()
+        self.window_y = self.window.winfo_height()
+        self.x = self.x * diff_x
+        self.y = self.y * diff_y
+        print(diff_x, diff_y)
+        if abs(diff_x) > 1000 or abs(diff_y) > 1000:
+            return
+        print(self.x)
+        print(self.y)
+        print(self.x)
+        print(self.y)
+        self.frame.place_configure(x=self.x + self.window_x / 5, y=self.y + self.window_y / 10, relwidth=1, relheight=1)
+        self.window.update()
 
     def show(self, x, y, relwidth, relheight):
-        self.frame.place(x=x, y=y, relwidth=relwidth, relheight=relheight)
+        print(x, y, relwidth, relheight)
+        self.x = x
+        self.y = y
+        self.window_x = self.window.winfo_width()
+        self.window_y = self.window.winfo_height()
+        self.frame.place(x=x, y=y, relwidth=1, relheight=1)
 
     def clear(self):
         self.canva.clear()

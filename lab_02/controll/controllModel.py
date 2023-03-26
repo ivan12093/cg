@@ -17,7 +17,7 @@ def inputPointsTXT(filename):
                 continue
             try:
                 x, y = line.split(Tools.SEPARATOR_COORDS)
-                coords[-1].append((float(x), float(y)))
+                coords[-1].append((float(x) + 30, float(y) - 10))
             except:
                 return indLine           # Если не получается считать, то вернет номер строки, где произошла ошибка
             indLine += 1
