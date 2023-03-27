@@ -19,8 +19,6 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(ui->drawLinePushButton, &QAbstractButton::clicked, this, &MainWindow::drawLineRequested);
     QObject::connect(ui->drawSpectrePushButton, &QAbstractButton::clicked, this, &MainWindow::drawSpectreRequested);
 
-    QObject::connect(ui->graphicsView, &QGraphicsScene::wheelEvent)
-
     ui->graphicsView->setScene(new QGraphicsScene());
 }
 

@@ -22,8 +22,6 @@ std::vector<Line> Spectre::getLines() const
         line = line.Rotate(center, angle);
         total_angle += angle;
     }
-    for (auto a : result)
-        std::cerr << a.p1().x() << " " << a.p1().y() << "\n";
 
     return result;
 }
