@@ -8,7 +8,7 @@ from tkinter import Tk
 
 def main():
     root = Tk()
-    root.geometry('1440x1080')
+    root.geometry('1920x1080')
 
     root.title('Лабораторная номер 2')
 
@@ -37,27 +37,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# from tkinter import *
-# from PIL import ImageTk
-# from view.CanvasField import *
-#
-# root = Tk()
-# root.geometry('850x650')
-# root['bg'] = 'yellow'
-# f = WrapCanva(root, width=200, height=200, highlightthickness=0)
-# f.show(Settings.X_CANVA, Settings.Y_CANVA, Settings.REL_X_CANVA, Settings.REL_Y_CANVA)
-# image = ImageTk.PhotoImage(file = r"C:\projects\Сomputer graphics\lab_02\shared\rootIcon.png")
-# f.canva.create_line(10, 10, 100, 100)
-# f.canva.create_image(10, 10, image = image, anchor = NW)
-# f = Frame(root, width=200, height=200)
-# canvas = CartesianField(root, f, width=200, height=200, bg='blue')
-# canvas.place(x=0, y=0, relwidth=1)
-#
-# image = ImageTk.PhotoImage(file = r"C:\projects\Сomputer graphics\lab_02\shared\rootIcon.png")
-# canvas.create_image(10, 10, image = image, anchor = NW)
-# canvas.create_line(10, 10, 100, 100)
-# f.place(x=0, y=0, relwidth=0.7)
-
-# mainloop()
