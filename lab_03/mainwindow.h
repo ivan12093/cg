@@ -31,6 +31,7 @@ signals:
     void drawLineRequested();
     void drawSpectreRequested();
     void undo();
+    void clearCanvas();
 private slots:
     void on_pickColorPushButton_clicked();
     void on_colorPicked(const QColor &color);
@@ -39,6 +40,8 @@ private slots:
     void on_undoAction_triggered();
 
     void on_pickBackgroundColorPushButton_clicked();
+
+    void on_clearCanvasAction_triggered();
 
 private:
     Ui::MainWindow *ui;

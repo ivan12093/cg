@@ -10,6 +10,7 @@ App::App(MainWindow *mw) : main_window(mw), command_stack()
     QObject::connect(main_window, &MainWindow::drawLineRequested, this, &App::on_drawLineRequest);
     QObject::connect(main_window, &MainWindow::drawSpectreRequested, this, &App::on_drawSpectreRequest);
     QObject::connect(main_window, &MainWindow::undo, this, &App::on_undo);
+    QObject::connect(main_window, &MainWindow::clearCanvas, this, &App::on_clearCanvas);
 }
 
 App::~App()
@@ -32,6 +33,15 @@ void App::on_undo()
     command->undo();
     command_stack.pop();
     delete command;
+}
+
+void App::on_clearCanvas()
+{
+    auto ui = main_window->getUi();
+    auto clear_canvas_command = new Domain::ClearCanvasCommand(ui->graphicsView);
+
+    clear_canvas_command->execute();
+    command_stack.push(clear_canvas_command);
 }
 
 void App::on_drawLineRequest()

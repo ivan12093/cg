@@ -62,4 +62,23 @@ void DrawSpectreCommand::undo()
     }
 }
 
+ClearCanvasCommand::ClearCanvasCommand(QGraphicsView *_canvas) : canvas(_canvas), deleted() {}
+
+void ClearCanvasCommand::execute()
+{
+    deleted = canvas->scene()->items();
+    for (auto to_delete : deleted)
+    {
+        canvas->scene()->removeItem(to_delete);
+    }
+}
+
+void ClearCanvasCommand::undo()
+{
+    for (auto to_add : deleted)
+    {
+        canvas->scene()->addItem(to_add);
+    }
+}
+
 } // namespace Domain

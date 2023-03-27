@@ -20,6 +20,7 @@ public slots:
     void on_drawLineRequest();
     void on_drawSpectreRequest();
     void on_undo();
+    void on_clearCanvas();
 };
 
 #endif // APP_H

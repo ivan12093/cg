@@ -465,6 +465,7 @@
      <string>Редактирование</string>
     </property>
     <addaction name="undoAction"/>
+    <addaction name="clearCanvasAction"/>
    </widget>
    <addaction name="infoMenu"/>
    <addaction name="editMenu"/>
@@ -475,6 +476,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="clearCanvasAction">
+   <property name="text">
+    <string>Очистить канвас</string>
    </property>
   </action>
  </widget>

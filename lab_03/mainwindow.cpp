@@ -98,3 +98,9 @@ void MainWindow::on_pickBackgroundColorPushButton_clicked()
     QObject::connect(color_dialog, &QColorDialog::colorSelected, this, &MainWindow::on_backgroundColorPicked);
 }
 
+
+void MainWindow::on_clearCanvasAction_triggered()
+{
+    emit clearCanvas();
+}
+

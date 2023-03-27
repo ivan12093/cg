@@ -43,6 +43,17 @@ public:
     void undo() override;
 };
 
+class ClearCanvasCommand : public Command
+{
+private:
+    QGraphicsView *canvas;
+    QList<QGraphicsItem*> deleted;
+public:
+    ClearCanvasCommand(QGraphicsView *_canvas);
+    void execute() override;
+    void undo() override;
+};
+
 } // namespace Domain
 
 #endif // DOMAIN_COMMAND_H
