@@ -182,50 +182,56 @@ std::vector<QPoint> PointsBresehnamInteger(const Domain::Line &line)
 
 std::vector<QPoint> PointsBresenhamFloat(const Domain::Line &line)
 {
-    int dx = sign(line.dx());
-    int dy = sign(line.dy());
-
-    int lenX = abs(line.dx());
-    int lenY = abs(line.dy());
-
-    int len = std::max(lenX, lenY);
-
-    if (len == 0)
+    if (line.isNull())
     {
         return {line.p1().toPoint()};
     }
 
-    std::vector<QPoint> result(len + 1);
+    auto x = line.x1();
+    auto y = line.y1();
 
-    if (lenY <= lenX)
+    auto dx = abs(line.dx());
+    auto dy = abs(line.dy());
+
+    auto sx = sign(line.dx());
+    auto sy = sign(line.dy());
+
+    bool swapped = false;
+    if (dy > dx)
     {
-        int x = line.p1().x();
-        qreal y = line.p1().y();
-
-        ++len;
-        int i = 0;
-        while (len--)
-        {
-            result[i] = QPoint(x, qRound(y));
-            ++i;
-            x += dx;
-            y += (qreal)dy * lenY / lenX;
-        }
+        std::swap(dx, dy);
+        swapped = true;
     }
-    else
-    {
-        qreal x = line.p1().x();
-        int y = line.p1().y();
 
-        ++len;
-        int i = 0;
-        while (len--)
+    auto m = dy / dx;
+    auto e = m - 0.5;
+    int l = dx + 1;
+
+    std::vector<QPoint> result(l);
+    for (int i = 0; i < l; ++i)
+    {
+        result[i] = QPoint(x, y);
+        if (e >= 0)
         {
-            result[i] = QPoint(qRound(x), y);
-            ++i;
-            x += dx;
-            y += (qreal)dy * lenY / lenX;
+            if (swapped)
+            {
+                x += sx;
+            }
+            else
+            {
+                y += sy;
+            }
+            --e;
         }
+        if (!swapped)
+        {
+            x += sx;
+        }
+        else
+        {
+            y += sy;
+        }
+        e += m;
     }
     return result;
 }
@@ -248,8 +254,8 @@ std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line 
     }
 
     int imax = 255;
-    auto cur_x = line.p1().x();
-    auto cur_y = line.p1().y();
+    auto cur_x = line.x1();
+    auto cur_y = line.y1();
 
     auto dx = line.dx();
     auto dy = line.dy();
@@ -268,7 +274,7 @@ std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line 
     }
 
     auto m = dy / dx * imax;
-    auto e = imax / 2;
+    auto e = imax / 2.0;
     auto w = imax - m;
     auto l = qRound(dx) + 1;
 
@@ -277,7 +283,7 @@ std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line 
     for (std::pair<QPoint, QColor> &pair: result)
     {
         pair.first = QPoint(cur_x, cur_y);
-        pair.second = choose_color(color, imax - e);
+        pair.second = choose_color(color, qRound(e));
         if (e <= w)
         {
             if (change)
