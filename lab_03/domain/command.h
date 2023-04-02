@@ -4,6 +4,7 @@
 #include "domain/line.h"
 #include "delivery/line.h"
 #include "spectre.h"
+#include "mainwindow.h"
 
 #include <QGraphicsView>
 
@@ -23,8 +24,10 @@ private:
     QGraphicsView *canvas;
     QColor color;
     Delivery::Line *canvas_line;
+    Delivery::Line::DrawMethod algo;
 public:
-    DrawLineCommand(const Domain::Line &_line, const QColor &_color, QGraphicsView *_canvas);
+    DrawLineCommand(const Domain::Line &_line, const QColor &_color, QGraphicsView *_canvas,
+                    MainWindow::DrawAlgo _algo);
     ~DrawLineCommand();
     void execute() override;
     void undo() override;
@@ -36,8 +39,10 @@ private:
     QGraphicsView *canvas;
     QColor color;
     std::vector<Delivery::Line*> canvas_lines;
+    Delivery::Line::DrawMethod algo;
 public:
-    DrawSpectreCommand(const Domain::Spectre &_spectre, const QColor &_color, QGraphicsView *_canvas);
+    DrawSpectreCommand(const Domain::Spectre &_spectre, const QColor &_color, QGraphicsView *_canvas,
+                       MainWindow::DrawAlgo _algo);
     ~DrawSpectreCommand();
     void execute() override;
     void undo() override;

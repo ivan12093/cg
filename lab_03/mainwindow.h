@@ -18,13 +18,15 @@ private:
     QColor pen_color = QColor(Qt::black);
 
 public:
+    enum DrawAlgo {Default, CDA, BresenhamInteger, BresenhamFloat,
+                  BresenhamSmooth, Wu};
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
     QColor getPenColor() const;
     Domain::Line getLine() const;
     Domain::Spectre getSpectre() const;
-    QString getDrawAlgo() const;
+    DrawAlgo getDrawAlgo() const;
 
     Ui::MainWindow *getUi() const;
 signals:
@@ -36,12 +38,13 @@ private slots:
     void on_pickColorPushButton_clicked();
     void on_colorPicked(const QColor &color);
     void on_backgroundColorPicked(const QColor &color);
-
     void on_undoAction_triggered();
-
     void on_pickBackgroundColorPushButton_clicked();
-
     void on_clearCanvasAction_triggered();
+    void on_increaseScalePushButton_clicked();
+    void on_dereaseScalePushButton_clicked();
+    void on_authorAction_triggered();
+    void on_timeAction_triggered();
 
 private:
     Ui::MainWindow *ui;

@@ -48,9 +48,10 @@ void App::on_drawLineRequest()
 {
     auto line = main_window->getLine();
     auto pen_color = main_window->getPenColor();
+    auto method = main_window->getDrawAlgo();
 
     auto ui = main_window->getUi();
-    auto draw_line_command = new Domain::DrawLineCommand(line, pen_color, ui->graphicsView);
+    auto draw_line_command = new Domain::DrawLineCommand(line, pen_color, ui->graphicsView, method);
     draw_line_command->execute();
     command_stack.push(draw_line_command);
 }
@@ -59,9 +60,10 @@ void App::on_drawSpectreRequest()
 {
     auto spectre = main_window->getSpectre();
     auto pen_color = main_window->getPenColor();
+    auto method = main_window->getDrawAlgo();
 
     auto ui = main_window->getUi();
-    auto draw_spectre_command = new Domain::DrawSpectreCommand(spectre, pen_color, ui->graphicsView);
+    auto draw_spectre_command = new Domain::DrawSpectreCommand(spectre, pen_color, ui->graphicsView, method);
     draw_spectre_command->execute();
     command_stack.push(draw_spectre_command);
 }

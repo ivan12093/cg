@@ -3,12 +3,42 @@
 
 #include <iostream>
 
+static Delivery::Line::DrawMethod get_method_by_name(MainWindow::DrawAlgo algo)
+{
+    Delivery::Line::DrawMethod result = &Delivery::Line::DrawDefault;
+    switch (algo) {
+    case MainWindow::DrawAlgo::Default:
+        result = &Delivery::Line::DrawDefault;
+        break;
+    case MainWindow::DrawAlgo::CDA:
+        result = &Delivery::Line::DrawCDA;
+        break;
+    case MainWindow::DrawAlgo::BresenhamInteger:
+        result = &Delivery::Line::DrawBresehnamInteger;
+        break;
+    case MainWindow::DrawAlgo::BresenhamFloat:
+        result = &Delivery::Line::DrawBresenhamFloat;
+        break;
+    case MainWindow::DrawAlgo::BresenhamSmooth:
+        result = &Delivery::Line::DrawBresehnamSmooth;
+        break;
+    case MainWindow::DrawAlgo::Wu:
+        result = &Delivery::Line::DrawWu;
+        break;
+    default:
+        break;
+    }
+    return result;
+}
+
 namespace Domain {
 
-DrawLineCommand::DrawLineCommand(const Domain::Line &_line, const QColor &_color, QGraphicsView *_canvas) :
+DrawLineCommand::DrawLineCommand(const Domain::Line &_line, const QColor &_color, QGraphicsView *_canvas,
+                                 MainWindow::DrawAlgo _algo) :
     canvas(_canvas), color(_color), canvas_line(nullptr)
 {
-    canvas_line = new Delivery::Line(_line, color);
+    algo = get_method_by_name(_algo);
+    canvas_line = new Delivery::Line(_line, color, algo);
 }
 
 DrawLineCommand::~DrawLineCommand()
@@ -26,14 +56,16 @@ void DrawLineCommand::undo()
     canvas->scene()->removeItem(canvas_line);
 }
 
-DrawSpectreCommand::DrawSpectreCommand(const Spectre &_spectre, const QColor &_color, QGraphicsView *_canvas) :
+DrawSpectreCommand::DrawSpectreCommand(const Spectre &_spectre, const QColor &_color, QGraphicsView *_canvas,
+                                       MainWindow::DrawAlgo _algo) :
     canvas(_canvas), color(_color), canvas_lines()
 {
+    algo = get_method_by_name(_algo);
     auto lines = _spectre.getLines();
     canvas_lines.reserve(lines.size());
     for (const Domain::Line &line : lines)
     {
-        auto canvas_line = new Delivery::Line(line, color);
+        auto canvas_line = new Delivery::Line(line, color, algo);
         canvas_lines.push_back(canvas_line);
     }
 }
