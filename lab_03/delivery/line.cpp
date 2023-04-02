@@ -108,7 +108,7 @@ std::vector<QPoint> PointsCDA(const Domain::Line &line)
     dx /= npoints;
     dy /= npoints;
 
-    std::vector<QPoint> result(npoints);
+    std::vector<QPoint> result(npoints + 2);
     for (int i = 0; i < npoints + 1; ++i)
     {
         result[i] = QPoint(qRound(cur_x), qRound(cur_y));
