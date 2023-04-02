@@ -16,7 +16,7 @@ std::vector<Line> Spectre::getLines() const
     std::vector<Line> result;
     qreal total_angle = 0;
 
-    while (fabs(total_angle) < 2 * PI)
+    while (fabs(total_angle) < PI)
     {
         result.push_back(line);
         line = line.Rotate(center, angle);
