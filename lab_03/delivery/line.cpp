@@ -86,8 +86,9 @@ void Line::DrawWu(QPainter *painter, const QStyleOptionGraphicsItem *option, QWi
     }
 }
 
-std::vector<QPoint> PointsCDA(const Domain::Line &line)
+std::vector<QPoint> PointsCDA(const Domain::Line &line, int *step)
 {
+    *step = 0;
     if (line.isNull())
     {
         return {line.p1().toPoint()};
@@ -114,12 +115,19 @@ std::vector<QPoint> PointsCDA(const Domain::Line &line)
         result[i] = QPoint(qRound(cur_x), qRound(cur_y));
         cur_x += dx;
         cur_y += dy;
+
+        if (step && !((qRound(cur_x + dx) == qRound(cur_x) && qRound(cur_y + dy) != qRound(cur_y)) ||
+                      (qRound(cur_x + dx) != qRound(cur_x) && qRound(cur_y + dy) == qRound(cur_y))))
+        {
+            ++(*step);
+        }
     }
     return result;
 }
 
-std::vector<QPoint> PointsBresehnamInteger(const Domain::Line &line)
+std::vector<QPoint> PointsBresehnamInteger(const Domain::Line &line, int *step)
 {
+    *step = 0;
     int dx = sign(line.dx());
     int dy = sign(line.dy());
 
@@ -145,6 +153,13 @@ std::vector<QPoint> PointsBresehnamInteger(const Domain::Line &line)
         int i = 0;
         while (len--)
         {
+            if (i > 0)
+            {
+                if (result[i - 1].x() != x && result[i - 1].y() != y)
+                {
+                    ++(*step);
+                }
+            }
             result[i] = QPoint(x, y);
             ++i;
             x += dx;
@@ -166,6 +181,13 @@ std::vector<QPoint> PointsBresehnamInteger(const Domain::Line &line)
         int i = 0;
         while (len--)
         {
+            if (i > 0)
+            {
+                if (result[i - 1].x() != x && result[i - 1].y() != y)
+                {
+                    ++(*step);
+                }
+            }
             result[i] = QPoint(x, y);
             ++i;
             y += dy;
@@ -180,8 +202,9 @@ std::vector<QPoint> PointsBresehnamInteger(const Domain::Line &line)
     return result;
 }
 
-std::vector<QPoint> PointsBresenhamFloat(const Domain::Line &line)
+std::vector<QPoint> PointsBresenhamFloat(const Domain::Line &line, int *step)
 {
+    *step = 0;
     if (line.isNull())
     {
         return {line.p1().toPoint()};
@@ -210,6 +233,11 @@ std::vector<QPoint> PointsBresenhamFloat(const Domain::Line &line)
     std::vector<QPoint> result(l);
     for (int i = 0; i < l; ++i)
     {
+        if (i > 0 && step && !((result[i - 1].x() == x && result[i - 1].y() != y) ||
+                               (result[i - 1].x() != x && result[i - 1].y() == y)))
+        {
+            ++(*step);
+        }
         result[i] = QPoint(x, y);
         if (e >= 0)
         {
@@ -246,7 +274,8 @@ static QColor choose_color(const QColor &color, int intensivity)
     return result;
 }
 
-std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line &line, const QColor &color)
+std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line &line,
+                                                             const QColor &color, int *step)
 {
     if (line.isNull())
     {
@@ -279,11 +308,18 @@ std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line 
     auto l = qRound(dx) + 1;
 
     std::vector<std::pair<QPoint, QColor>> result(l);
-
+    auto prev_x = cur_x;
+    auto prev_y = cur_y;
     for (std::pair<QPoint, QColor> &pair: result)
     {
+        if (step && !((prev_x == cur_x && prev_y != cur_y) || (prev_x != cur_x && prev_y == cur_y)))
+        {
+            ++(*step);
+        }
         pair.first = QPoint(cur_x, cur_y);
         pair.second = choose_color(color, qRound(e));
+        prev_x = cur_x;
+        prev_y = cur_y;
         if (e <= w)
         {
             if (change)
@@ -306,7 +342,7 @@ std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line 
     return result;
 }
 
-std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const QColor &color)
+std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const QColor &color, int *step)
 {
     if (line.isNull())
     {
@@ -338,10 +374,18 @@ std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const 
     auto cur_y = y0;
     auto cur_x = x0;
     int l = 2 * (x1 - x0 + 1);
-
+    auto prev_x = cur_x;
+    auto prev_y = cur_y;
     std::vector<std::pair<QPoint, QColor>> result(l);
     for (int i = 0; i < l - 1; i += 2)
     {
+        if (step && cur_x < line.x2())
+        {
+            if ((int)cur_y != (int)(cur_y + grad))
+            {
+                ++(*step);
+            }
+        }
         auto s = sign(cur_y);
         auto r1 = cur_y - (int)cur_y;
         auto r2 = 1 - r1;
@@ -360,6 +404,8 @@ std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const 
             result[i + 1].second = choose_color(color, imax * r1);
             result[i + 1].first = QPoint(cur_x, cur_y + s);
         }
+        prev_x = cur_x;
+        prev_y = cur_y;
         cur_y += grad;
         cur_x += 1;
     }

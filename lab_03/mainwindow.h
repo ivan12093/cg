@@ -45,6 +45,7 @@ private slots:
     void on_dereaseScalePushButton_clicked();
     void on_authorAction_triggered();
     void on_timeAction_triggered();
+    void on_gradationAction_triggered();
 
 private:
     Ui::MainWindow *ui;

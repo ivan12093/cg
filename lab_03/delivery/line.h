@@ -8,11 +8,13 @@
 
 namespace Delivery {
 
-std::vector<QPoint> PointsCDA(const Domain::Line &line);
-std::vector<QPoint> PointsBresehnamInteger(const Domain::Line &line);
-std::vector<QPoint> PointsBresenhamFloat(const Domain::Line &line);
-std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line &line, const QColor &color);
-std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const QColor &color);
+std::vector<QPoint> PointsCDA(const Domain::Line &line, int *step = nullptr);
+std::vector<QPoint> PointsBresehnamInteger(const Domain::Line &line, int *step = nullptr);
+std::vector<QPoint> PointsBresenhamFloat(const Domain::Line &line, int *step = nullptr);
+std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line &line, const QColor &color
+                                                             , int *step = nullptr);
+std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const QColor &color,
+                                                int *step = nullptr);
 
 class Line : public QGraphicsLineItem
 {

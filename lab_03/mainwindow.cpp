@@ -15,6 +15,7 @@
 #include <QtCharts/QLegend>
 #include <QtCharts/QBarCategoryAxis>
 #include <QtCharts/QValueAxis>
+#include <QtCharts/QLineSeries>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -194,6 +195,73 @@ void MainWindow::on_timeAction_triggered()
     axisX->append(methods);
     chart->addAxis(axisX, Qt::AlignBottom);
     series->attachAxis(axisX);
+
+    chart->legend()->setVisible(true);
+    chart->legend()->setAlignment(Qt::AlignBottom);
+
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+    chartView->resize(QSize(900, 600));
+    chartView->show();
+}
+
+
+void MainWindow::on_gradationAction_triggered()
+{
+    qreal len = 100;
+    int interval = 10;
+
+    QStringList categories;
+    categories << "ЦДА" << "Брезенхэм (вещественные)" << "Брезенхэм (целые)" << "Брезенхэм (устранение ступенчатости)" << "Ву";
+
+    QList <QLineSeries *> sets = QList <QLineSeries *> ();
+    for (int curType = 0; curType < categories.length(); curType++)
+    {
+        QLineSeries *series = new QLineSeries();
+        series->setName(categories[curType]);
+        sets.append(series);
+    }
+
+    for (int angle = 0; angle <= 90; angle += interval)
+        for (int curType = 0; curType < categories.length(); curType++)
+        {
+            qreal rad = angle * PI / 180;
+
+            auto start = Domain::Point(0, 0);
+            auto end = Domain::Point(start.x() + cos(rad) * len, start.y() - sin(rad) * len);
+
+            auto line = Domain::Line(start, end);
+            int step = 0;
+            switch (curType)
+            {
+            case 0:
+                Delivery::PointsCDA(line, &step);
+                break;
+            case 1:
+                Delivery::PointsBresenhamFloat(line, &step);
+                break;
+            case 2:
+                Delivery::PointsBresehnamInteger(line, &step);
+                break;
+            case 3:
+                Delivery::PointsBresehnamSmooth(line, Qt::black, &step);
+                break;
+            case 4:
+                Delivery::PointsWu(line, Qt::black, &step);
+                break;
+            }
+            sets[curType]->append(QPointF(angle, step));
+        }
+
+    QChart *chart = new QChart();
+
+    for (int curType = 0; curType < categories.length(); curType++)
+        chart->addSeries(sets[curType]);
+
+    chart->setTitle("Ступенчатость отрезков");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+    chart->createDefaultAxes();
 
     chart->legend()->setVisible(true);
     chart->legend()->setAlignment(Qt::AlignBottom);
