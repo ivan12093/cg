@@ -355,6 +355,27 @@ std::vector<std::pair<QPoint, QColor>> PointsBresehnamSmooth(const Domain::Line 
     return result;
 }
 
+static int iPartOfNumber(qreal x)
+{
+    return (int)x;
+}
+
+static int roundNumber(qreal x)
+{
+    return iPartOfNumber(x + 0.5);
+}
+
+static qreal fPartOfNumber(qreal x)
+{
+    if (x > 0) return x - iPartOfNumber(x);
+    return x - (iPartOfNumber(x) + 1);
+}
+
+static qreal rfPartOfNumber(qreal x)
+{
+    return 1 - fPartOfNumber(x);
+}
+
 std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const QColor &color, int *step)
 {
     if (step)
@@ -367,61 +388,57 @@ std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const 
     }
 
     int imax = 255;
-
-    QPointF istart = line.p1();
-    QPointF iend = line.p2();
-
-    qreal dx = abs(line.dx());
-    qreal dy = abs(line.dy());
-
-    bool swapped = abs(dy) > abs(dx);
-    if (swapped)
+    int steep = std::abs(line.dy()) > std::abs(line.dx());
+    int x0 = line.x1(), x1 = line.x2();
+    int y0 = line.y1(), y1 = line.y2();
+    if (steep)
     {
-        istart = QPointF(line.y1(), line.x1());
-        iend = QPointF(line.y2(), line.x2());
+        std::swap(x0, y0);
+        std::swap(x1, y1);
+    }
+    if (x0 > x1)
+    {
+        std::swap(x0, x1);
+        std::swap(y0, y1);
     }
 
-    if (istart.x() > iend.x())
-        std::swap(istart, iend);
+    qreal dx = x1 - x0;
+    qreal dy = y1 - y0;
+    qreal gradient = dy / dx;
 
-    dx = iend.x() - istart.x();
-    dy = iend.y() - istart.y();
-
-    qreal m = dx ? dy / dx : 1;
-
-    qreal y = istart.y() + m;
-    qreal x = istart.x();
-    std::vector<std::pair<QPoint, QColor>> result;
-    result.reserve((int)dx + 1);
-    for (int i = 0; i <= dx; ++i)
+    if (!dx)
     {
-        int s = sign(y);
-        auto r1 = abs(y) - (int)abs(y);
-        auto r2 = 1 - r1;
+        gradient = 1;
+    }
 
-        QPoint cur1 = QPoint(x, y);
-        if (swapped)
+    int xpxl1 = x0;
+    int xpxl2 = x1;
+    qreal intersectY = y0;
+    std::vector<std::pair<QPoint, QColor>> result;
+
+    if (steep)
+    {
+        int x;
+        for (x = xpxl1; x <= xpxl2; ++x)
         {
-            cur1.setX(y);
-            cur1.setY(x);
+            result.push_back({QPoint(intersectY, x),
+                              choose_color(color, imax * rfPartOfNumber(intersectY))});
+            result.push_back({QPoint(intersectY + 1, x),
+                              choose_color(color, imax * fPartOfNumber(intersectY))});
+            intersectY += gradient;
         }
-        QColor color1 = choose_color(color, imax * r2);
-        result.push_back({cur1, color1});
-
-        QPoint cur2 = QPoint(x, y + s);
-        if (swapped)
+    }
+    else
+    {
+        int x;
+        for (x = xpxl1; x <= xpxl2; ++x)
         {
-            cur2.setX(y + s);
-            cur2.setY(x);
+            result.push_back({QPoint(x, intersectY),
+                              choose_color(color, imax * rfPartOfNumber(intersectY))});
+            result.push_back({QPoint(x, intersectY + 1),
+                              choose_color(color, imax * fPartOfNumber(intersectY))});
+            intersectY += gradient;
         }
-        QColor color2 = choose_color(color, imax * r1);
-        result.push_back({cur2, color2});
-
-        if (step && std::round(y) != std::round(y + m))
-            ++(*step);
-
-        y += m;
-        ++x;
     }
     return result;
 }
