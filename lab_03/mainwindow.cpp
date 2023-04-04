@@ -153,12 +153,15 @@ void MainWindow::on_timeAction_triggered()
 
     std::vector<double> timings(DrawAlgo::Wu + 1);
 
+    int iteration_num = 1000;
+    double angle = PI / 1000;
     for (int i = 0; i < 1000; ++i)
         for (int curType = 0; curType <= DrawAlgo::Wu; curType++)
         {
             auto p1 = Domain::Point(0, 0);
             auto p2 = Domain::Point(len, len);
-            auto line = Domain::Line(p1, p2);
+            auto line = Domain::Line(p1, p2).Rotate(Domain::Point(len / 2, len / 2), angle);
+            angle += angle;
             auto command = Domain::DrawLineCommand(line, Qt::black, fake_canvas, (DrawAlgo)curType);
 
             auto t1 = std::chrono::high_resolution_clock::now();
