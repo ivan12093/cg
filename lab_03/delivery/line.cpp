@@ -368,59 +368,60 @@ std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const 
 
     int imax = 255;
 
-    auto x0 = line.x1(), y0 = line.y1();
-    auto x1 = line.x2(), y1 = line.y2();
+    QPointF istart = line.p1();
+    QPointF iend = line.p2();
 
-    auto dx = line.dx();
-    auto dy = line.dy();
+    qreal dx = abs(line.dx());
+    qreal dy = abs(line.dy());
 
-    bool change = abs(dx) < abs(dy);
-    if (change)
+    bool swapped = abs(dy) > abs(dx);
+    if (swapped)
     {
-        std::swap(x0, y0);
-        std::swap(x1, y1);
+        istart = QPointF(line.y1(), line.x1());
+        iend = QPointF(line.y2(), line.x2());
     }
-    if (x1 < x0)
+
+    if (istart.x() > iend.x())
+        std::swap(istart, iend);
+
+    dx = iend.x() - istart.x();
+    dy = iend.y() - istart.y();
+
+    qreal m = dx ? dy / dx : 1;
+
+    qreal y = istart.y() + m;
+    qreal x = istart.x();
+    std::vector<std::pair<QPoint, QColor>> result;
+    result.reserve((int)dx + 1);
+    for (int i = 0; i <= dx; ++i)
     {
-        std::swap(x0, x1);
-        std::swap(y0, y1);
-    }
-    dx = x1 - x0;
-    dy = y1 - y0;
-    auto grad = std::abs(dx) > 1e-3 ? dy / dx : 1;
-    auto cur_y = y0;
-    auto cur_x = x0;
-    int l = 2 * (x1 - x0 + 1);
-    std::vector<std::pair<QPoint, QColor>> result(l);
-    for (int i = 0; i < l - 1; i += 2)
-    {
-        if (step && cur_x < line.x2())
-        {
-            if ((int)cur_y != (int)(cur_y + grad))
-            {
-                ++(*step);
-            }
-        }
-        auto s = sign(cur_y);
-        auto r1 = cur_y - (int)cur_y;
+        int s = sign(y);
+        auto r1 = abs(y) - (int)abs(y);
         auto r2 = 1 - r1;
 
-        if (change)
+        QPoint cur1 = QPoint(x, y);
+        if (swapped)
         {
-            result[i].second = choose_color(color, imax * r2);
-            result[i].first = QPoint(cur_y, cur_x);
-            result[i + 1].second = choose_color(color, imax * r1);
-            result[i].first = QPoint(cur_y + s, cur_x);
+            cur1.setX(y);
+            cur1.setY(x);
         }
-        else
+        QColor color1 = choose_color(color, imax * r2);
+        result.push_back({cur1, color1});
+
+        QPoint cur2 = QPoint(x, y + s);
+        if (swapped)
         {
-            result[i].second = choose_color(color, imax * r2);
-            result[i].first = QPoint(cur_x, cur_y);
-            result[i + 1].second = choose_color(color, imax * r1);
-            result[i + 1].first = QPoint(cur_x, cur_y + s);
+            cur2.setX(y + s);
+            cur2.setY(x);
         }
-        cur_y += grad;
-        cur_x += 1;
+        QColor color2 = choose_color(color, imax * r1);
+        result.push_back({cur2, color2});
+
+        if (step && std::round(y) != std::round(y + m))
+            ++(*step);
+
+        y += m;
+        ++x;
     }
     return result;
 }
