@@ -421,6 +421,13 @@ std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const 
         int x;
         for (x = xpxl1; x <= xpxl2; ++x)
         {
+            if (step && x < xpxl2)
+            {
+                if ((int)intersectY != (int)(intersectY + gradient))
+                {
+                    ++(*step);
+                }
+            }
             result.push_back({QPoint(intersectY, x),
                               choose_color(color, imax * rfPartOfNumber(intersectY))});
             result.push_back({QPoint(intersectY + 1, x),
@@ -433,6 +440,13 @@ std::vector<std::pair<QPoint, QColor>> PointsWu(const Domain::Line &line, const 
         int x;
         for (x = xpxl1; x <= xpxl2; ++x)
         {
+            if (step && x < xpxl2)
+            {
+                if ((int)intersectY != (int)(intersectY + gradient))
+                {
+                    ++(*step);
+                }
+            }
             result.push_back({QPoint(x, intersectY),
                               choose_color(color, imax * rfPartOfNumber(intersectY))});
             result.push_back({QPoint(x, intersectY + 1),
