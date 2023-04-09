@@ -137,7 +137,7 @@ void MainWindow::on_authorAction_triggered()
 
 void MainWindow::on_timeAction_triggered()
 {
-    qreal len = 100000;
+    qreal len = 100;
 
     QStringList categories;
     categories << "Библиотечная" << "ЦДА" << "Брезенхэм (вещественные)" << "Брезенхэм (целые)" << "Брезенхэм со сглаживанием" << "Ву";
