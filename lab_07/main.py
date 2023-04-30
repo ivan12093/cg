@@ -210,7 +210,51 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.mid_point(QPointF(line[0][0], line[0][1]), QPointF(line[1][0], line[1][1]))
 
     def mid_point(self, p1: QPointF, p2: QPointF):
-    	pass
+        if (abs(QLineF(p1, p2).length()) < 1):
+            return
+        if get_code(p1, self.rect) & get_code(p2, self.rect):
+            return
+        if not(get_code(p1, self.rect) | get_code(p2, self.rect)):
+            self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), self.pen)
+            return
+        center = QPointF((p1.x() + p2.x()) / 2, (p1.y() + p2.y()) / 2)
+        self.mid_point(p1, center)
+        self.mid_point(center, p2)
+        
+def swap(p1, p2):
+    t = [i for i in p1]
+    p1[0] = p2[0]
+    p1[1] = p2[1]
+    p2[0] = t[0]
+    p2[1] = t[1]
+
+def get_code(point, rect):
+    code = [0, 0, 0, 0]
+    if point.x() < rect[0]:
+        code[0] = 1
+    elif point.x() > rect[1]:
+        code[1] = 1
+    if point.y() < rect[2]:
+        code[2] = 1
+    elif point.y() > rect[3]:
+        code[3] = 1
+
+    return int(''.join(map(str, code)), 2)
+
+
+def code_bit_and(code1, code2):
+    count = 0
+    for i in range(len(code1)):
+        count += code1[i] & code2[i]
+    
+    return count
+
+def is_visible(code1, code2):
+    flag = 1
+    for i in range(len(code1)):
+        if not (code1[i] == code2[i] == 0):
+            flag = 0
+    return flag
 
 
 if __name__ == "__main__":
