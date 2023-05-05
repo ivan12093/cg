@@ -34,6 +34,15 @@ class myScene(QtWidgets.QGraphicsScene):
         self.last_line = None
         self.centre = False
 
+    def clear(self):
+        super().clear()
+        self.close_dot = None
+        self.vert = False
+        self.horiz = False
+        self.last_clip = None
+        self.last_line = None
+        self.centre = False
+
     def mousePressEvent(self, e):
         if e.button() == 1: #ЛКМ
             if self.centre:
@@ -93,6 +102,40 @@ class myScene(QtWidgets.QGraphicsScene):
         win.redraw_all()
         # win.redraw_edges()
 
+    def add_point(self, x, y, pen, mode = "line"):
+        x, y = round(x), round(y)
+        if mode == "line":
+            if self.last_line == None:
+                self.last_line = [round(x), round(y)]
+            else:
+                if self.horiz and self.vert:
+                    return
+                elif self.horiz and not self.vert:
+                    x = self.last_line[0]
+                elif not self.horiz and self.vert:
+                    y = self.last_line[1]
+                pen.setColor(win.color_line)
+                win.lines.append([[self.last_line[0], self.last_line[1]], [x, y]])
+                self.addLine(self.last_line[0], self.last_line[1], x, y, pen)
+                self.last_line = None
+
+        elif mode == "clip":
+            if self.close_dot == None:
+                self.close_dot = [round(x), round(y)]
+            else:
+                if self.horiz and self.vert:
+                    return
+                elif self.horiz and not self.vert:
+                    x = self.last_clip[0]
+                elif not self.horiz and self.vert:
+                    y = self.last_clip[1]
+                pen.setColor(win.color_edge)
+                win.clip.append([[self.last_clip[0], self.last_clip[1]], [x, y]])
+                self.addLine(self.last_clip[0], self.last_clip[1], x, y, pen)
+                first = "({:d}, {:d})".format(self.last_clip[0], self.last_clip[1])
+                last = "({:d}, {:d})".format(x, y)
+                win.listWidget.addItem("{:<25s} {:<25s}".format(first, last))
+            self.last_clip = [x, y]
         
         
 
@@ -331,6 +374,99 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
             self.kb_cut(i, self.centre)
         self.pen.setWidth(1)
 
+    def kb_cut(self, line, centre):
+        point1 = line[0]
+        point2 = line[1]
+        t_beg = 0
+        t_end = 1
+        # директриса отрезка
+        D = [point2[0] - point1[0], point2[1] - point1[1]]
+
+        for edge in self.clip:
+            # вычисляем внутреннюю нормаль к i-й стороне
+            normal = inner_normal(edge, centre)
+            # вычисляем вектор от начала отрезка до i-й вершины
+            W = [point1[0] - edge[1][0], point1[1] - edge[1][1]]
+            # вычисляем два скалярных произведения
+            Dsm = scalar_mult(D, normal)
+            Wsm = scalar_mult(W, normal)
+
+             # если отрезок параллелен ребру отсекателя или вырожден в точку (P2==P1)
+            if Dsm == 0:
+                # если расположен по видимую сторону от текущей стороны - отсекать нечего
+                if Wsm >= 0:
+                    continue
+                # а если невидим относительно текущей стороны, значит является полностью невидимым
+                else:
+                    return
+            # иначе находим точку пересечения отрезка и текущего ребра
+            else:
+                t = -Wsm / Dsm
+
+            # если точка пересечения относится к началу видимой области
+            if Dsm > 0:
+                # если отрезок пересекает ребро за конечной точкой отрезка - невидимый
+                if t > 1:
+                    return 
+                # иначе обновляем нижнюю видимую точку в случае необходимости
+                else:
+                    t_beg = max(t_beg, t)
+            # если точка пересечения относится к концу видимой области - по аналогии
+            else:
+                if t < 0:
+                    return 
+                else:
+                    t_end = min(t_end, t)
+        # проверка на корректность
+        if t_beg <= t_end:
+            self.draw_new_segment(point1, point2, t_beg, t_end)
+
+    
+#   отсекатель проверяется на выпуклость
+def check_clip(clip):
+    global_direction = 0
+    i = 0
+    n = len(clip)
+    for i in range(n - 1):
+        cur_direction = vect_mult_sign_z(clip[i][0], clip[i][1], clip[i + 1][1])
+
+        if global_direction == 0:
+            global_direction = cur_direction
+        else:
+            if global_direction != cur_direction:
+                return False
+    return True
+
+# определение "знака" (знака проекции на ось z) векторного произведения
+# векторов [point1, point2] и [point2, point3]
+def vect_mult_sign_z(point1, point2, point3):
+    x1 = point2[0] - point1[0]
+    y1 = point2[1] - point1[1]
+    x2 = point3[0] - point2[0]
+    y2 = point3[1] - point2[1]
+    z = x1 * y2 - y1 * x2
+    if z > 0:
+
+        return 1
+    elif z < 0:
+        return -1
+    return 0
+
+# внутренняя нормаль к стороне
+def inner_normal(edge, central):
+    point1, point2 = edge
+    i = point2[0] - point1[0]
+    j = point2[1] - point1[1]
+
+    if j == 0:
+        normal = [0, 1]
+    else:
+        normal = [j, -i]
+
+    if scalar_mult_sign(normal, [central[0] - point2[0], central[1] - point2[1]]) < 0:
+        normal[0] *= -1
+        normal[1] *= -1
+    return normal
 
 # знак скалярного произведения векторов vec1 и vec2
 def scalar_mult_sign(vec1, vec2):
@@ -345,6 +481,19 @@ def scalar_mult_sign(vec1, vec2):
 def scalar_mult(vec1, vec2):
     return vec1[0] * vec2[0] + vec1[1] * vec2[1]
        
+def swap(p1, p2):
+    t = [i for i in p1]
+    p1[0] = p2[0]
+    p1[1] = p2[1]
+    p2[0] = t[0]
+    p2[1] = t[1]
+
+def is_visible(code1, code2):
+    flag = 1
+    for i in range(len(code1)):
+        if not (code1[i] == code2[i] == 0):
+            flag = 0
+    return flag
 
 
 
