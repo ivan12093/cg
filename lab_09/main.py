@@ -74,6 +74,25 @@ class myScene(QtWidgets.QGraphicsScene):
                 win.chosen = None
                 win.checkBox_on_clip.setChecked(0)
             self.add_point(round(e.scenePos().x()), round(e.scenePos().y()), win.pen, mode = "clip")
+                
+
+    def add_on_clip(self, x3, y3):
+        if win.chosen == None:
+            win.msg.setText("Не выбрано ребро отсекателя!")
+            win.msg.show()
+            return
+        x1, y1, x2, y2 = win.chosen
+        k = ((x3-x1) * (x2-x1) + (y3-y1)*(y2-y1))/ (pow(x2-x1, 2) + pow(y2-y1, 2))
+        x = x1 + k * (x2-x1)
+        y = y1 + k * (y2-y1)
+        if self.close_polygon == None:
+            t = win.item
+            self.clear()
+            win.redraw_clip()
+            if t!=None:
+                win.set_chosen(t)
+            win.polygon = []
+        self.add_point(x, y, win.pen, mode = "polygon")
 
 
     def keyPressEvent(self, e):
@@ -93,6 +112,46 @@ class myScene(QtWidgets.QGraphicsScene):
                 self.horiz = False
             elif e.key() == 16777249:
                 self.vert = False
+
+
+    def add_point(self, x, y, pen, mode = "polygon"):
+        x, y = round(x), round(y)
+        if mode == "polygon":
+            if self.close_polygon == None:
+                self.close_polygon = [x, y]
+            else:
+                if [x, y] == self.last_polygon:
+                    return
+                if self.horiz and self.vert:
+                    return
+                elif self.horiz and not self.vert:
+                    x = self.last_polygon[0]
+                elif not self.horiz and self.vert:
+                    y = self.last_polygon[1]
+                pen.setColor(win.color_line)
+                self.addLine(self.last_polygon[0], self.last_polygon[1], x, y, pen)
+            win.polygon.append([x,y])
+            self.last_polygon = [x, y]
+
+        elif mode == "clip":
+            if self.close_clip == None:
+                self.close_clip = [x, y]
+            else:
+                if [x, y] == self.last_clip:
+                    return
+                if self.horiz and self.vert:
+                    return
+                elif self.horiz and not self.vert:
+                    x = self.last_clip[0]
+                elif not self.horiz and self.vert:
+                    y = self.last_clip[1]
+                pen.setColor(win.color_edge)
+                win.clip.append([[self.last_clip[0], self.last_clip[1]], [x, y]])
+                self.addLine(self.last_clip[0], self.last_clip[1], x, y, pen)
+                first = "({:d}, {:d})".format(self.last_clip[0], self.last_clip[1])
+                last = "({:d}, {:d})".format(x, y)
+                win.listWidget.addItem("{:<25s} {:<25s}".format(first, last))
+            self.last_clip = [x, y]
         
         
 
@@ -275,12 +334,59 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
     
     def cut(self):
-        pass
+        if self.scene.close_clip != None:
+            self.msg.setText("Отсекатель не замкнут!")
+            self.msg.show() 
+            return
+        if self.scene.close_polygon != None:
+            self.msg.setText("Отсекаемый многоугольник не замкнут!")
+            self.msg.show() 
+            return
+        if not check_clip(self.clip):
+            self.msg.setText("Отсекатель не выпуклый!")
+            self.msg.show() 
+            return
+        self.scene.clear()
+        self.redraw_all()
+        self.pen.setColor(self.color_clipped)
+        self.pen.setWidth(2)
+        self.sh_cut(self.polygon, self.clip, self.centre)
+        self.pen.setWidth(1)
 
 
     def sh_cut(self, poly, cl, centre):
-        pass
-            
+        ncl = len(cl)
+        npoly = len(cl)
+        for i in range(ncl):
+            # обнуляем количество вершин результирующего многоугольника
+            nq = 0
+            q = []
+            wid_prev = is_visible(poly[0], cl[i], centre)
+            for j in range(1, npoly):
+                wid_cur = is_visible(poly[j], cl[i], centre)
+                # если текущее ребро отсекаемого и прямая,
+                # проходящая через текущее ребро отсекателя, пересекаются (разная видимость)
+                if wid_prev != wid_cur:
+                    intersection = segment_and_line_intersection(poly[j - 1], poly[j], cl[i])
+                    # то заносим точку пересечения в результирующий
+                    nq += 1
+                    q.append(intersection)
+                # если текущая вершина видима относительно текущего ребра то заносим в результирующий
+                if wid_cur:
+                    nq += 1
+                    q.append(poly[j])
+                wid_prev = wid_cur
+
+            # если отсекаемый невидим относительно текущего ребра, то он невидим относительно всего отсекателя
+            if nq == 0:
+                return 
+
+            # готовим исходный отсекаемый для следующего шага отсечения
+            q.append(q[0])
+            nq+=1
+            npoly, poly = nq, deepcopy(q)
+
+        self.draw_edges(poly)
     
     def draw_edges(self, poly):
         for i in range(len(poly) - 1):
@@ -318,6 +424,16 @@ def find_lines_intersection(line1, line2):
     dot = [x0, y0]
     return dot
 
+# найти уравнение прямой вида ax+by+c=0, проходящей через отрезок dot1-dot2 
+def find_line_by_2points(dot1, dot2):
+    # из уравнения прямой, проходящей через 2 точки
+    # (x - x1)/ (x2 - x1) = (y - y1) / (y2 - y1)
+    a = dot2[1] - dot1[1]
+    b = dot1[0] - dot2[0]
+    c = dot2[0] * dot1[1] - dot1[0] * dot2[1]
+    line = {'a': a, 'b': b, 'c': c}
+    return line
+
 # проверка видимости точки dot относительно ребра 
 # с помощью скалярного произведения нормали и вектора от point1 до точки
 def is_visible(dot, edge, centre):
@@ -344,6 +460,33 @@ def inner_normal(edge, central):
         normal[1] *= -1
     return normal
 
+#   отсекатель проверяется на выпуклость
+def check_clip(clip):
+    global_direction = 0
+    i = 0
+    n = len(clip)
+    for i in range(n - 1):
+        cur_direction = vect_mult_sign_z(clip[i][0], clip[i][1], clip[i + 1][1])
+
+        if global_direction == 0:
+            global_direction = cur_direction
+        else:
+            if global_direction != cur_direction:
+                return False
+    return True
+
+def normal(edge, c):
+    point1, point2 = edge
+    i = point2[0] - point1[0]
+    j = point2[1] - point1[1]
+
+    normal = [j, -i]
+
+    if scalar_mult_sign(normal, [c[0] - point2[0], c[1] - point2[1]]) >= 0:
+        normal[0] *= -1
+        normal[1] *= -1
+    return normal
+
 
 def scalar_mult_sign(vec1, vec2):
     sm = scalar_mult(vec1, vec2)
@@ -357,9 +500,24 @@ def scalar_mult_sign(vec1, vec2):
 def check_fit(dot, point1, point2):
     if ((min(point1[0], point2[0]) <= dot[0] <= max(point1[0], point2[0])) and
             (min(point1[1], point2[1]) <= dot[1] <= max(point1[1], point2[1]))):
+
         return True
     return False
 
+# определение "знака" (знака проекции на ось z) векторного произведения
+# векторов [point1, point2] и [point2, point3]
+def vect_mult_sign_z(point1, point2, point3):
+    x1 = point2[0] - point1[0]
+    y1 = point2[1] - point1[1]
+    x2 = point3[0] - point2[0]
+    y2 = point3[1] - point2[1]
+    z = x1 * y2 - y1 * x2
+    if z > 0:
+        return 1
+    elif z < 0:
+        return -1
+    return 0
+   
    # скалярное произведение векторов vec1 и vec2
 def scalar_mult(vec1, vec2):
     return vec1[0] * vec2[0] + vec1[1] * vec2[1]
