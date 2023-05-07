@@ -356,7 +356,7 @@ class Window(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def sh_cut(self, poly, cl, centre):
         ncl = len(cl)
-        npoly = len(cl)
+        npoly = len(poly)
         for i in range(ncl):
             # обнуляем количество вершин результирующего многоугольника
             nq = 0
